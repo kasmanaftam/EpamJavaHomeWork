@@ -114,7 +114,7 @@ class Entity{
             System.out.println("This point is out of area of current field");
             return;
         }
-        System.out.println("Moving starts from " + x + " " + y);
+        System.out.println("Moving starts from: " + x + " " + y + ", ends at: " + targetX + " " + targetY);
         while(targetX!=x || targetY!=y){
             int diffX = targetX-x;
             int diffY = targetY-y;
