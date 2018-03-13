@@ -57,10 +57,10 @@ public class Track {
                 return null;
             }
         }
-        int titleCnt=0;
-        Path targetFile = Paths.get(targetDirectory.toString(), this.getSongName(titleCnt));
+        int titleCount=0;
+        Path targetFile = Paths.get(targetDirectory.toString(), this.getSongName(titleCount));
         while(Files.exists(targetFile)){
-            targetFile = Paths.get(targetDirectory.toString(), this.getSongName(++titleCnt));
+            targetFile = Paths.get(targetDirectory.toString(), this.getSongName(++titleCount));
         }
         try{
             Files.createFile(targetFile);

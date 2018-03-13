@@ -18,6 +18,7 @@ public class FileUtil {
 
         String command = args[0];
 
+
         switch(command){
             case "help" : callHelp(); break;
             case "dir" : {
@@ -47,18 +48,7 @@ public class FileUtil {
 
 
     }
-    static void displayDir(String directory, String sortComparator, String SortOrder){
-        Path workingDirectory = Paths.get(directory);
-        try {
-            DirectoryStream<Path> dirStream = Files.newDirectoryStream(workingDirectory);
-            for(Path path : dirStream){
-                System.out.println(path.getName(path.getNameCount()-1));
-            }
-        }
-        catch(IOException e){
-            System.out.println("Can't access selected folder");
-        }
-    }
+
     static void callHelp(){
         System.out.println("Console file utils.");
         System.out.println("Works with the following keys:");
