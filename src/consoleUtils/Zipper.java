@@ -56,6 +56,7 @@ public class Zipper {
                 zipRecursive(path, rootIndex, outputStream);
                 zippedFiles++;
             }
+            zipFiles.close();
             if (zippedFiles == 0) {
                 outputStream.putNextEntry(new ZipEntry(file.subpath(rootIndex, file.getNameCount()).toString()));
             }
@@ -95,11 +96,19 @@ public class Zipper {
             Path targetFile = Paths.get(targetDirectory.toString(), zipEntry.getName());
             Path parentPath = targetFile.getParent();
             if (!Files.isDirectory(parentPath)) {
-                Files.createDirectories(parentPath);
-                System.out.println("Created directory: " + parentPath);
+               try {
+                   Files.createDirectories(parentPath);
+                   System.out.println("Created directory: " + parentPath);
+               } catch (IOException e){
+                   System.out.println("Can't create folder");
+                   zipStream.close();
+                   return;
+               }
             }
-            Files.createFile(targetFile);
-            System.out.println("Created file: " + targetFile);
+            if(Files.notExists(targetFile)) {
+                Files.createFile(targetFile);
+                System.out.println("Created file: " + targetFile);
+            }
             if (zipStream.available() == 0) {
                 continue;
             }

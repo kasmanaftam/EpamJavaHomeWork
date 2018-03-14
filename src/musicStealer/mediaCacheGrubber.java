@@ -75,6 +75,11 @@ public class mediaCacheGrubber {
             }
 
         }
+        try {
+            cacheFiles.close();
+        } catch (IOException e) {
+            System.out.println("Can't close directory stream!");
+        }
         System.out.println("Totally " + copiedFiles + " mp3 files has been found in cache folder" +
                 " and copied to destination folder");
     }

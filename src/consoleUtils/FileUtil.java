@@ -8,58 +8,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Scanner;
 
 public class FileUtil {
+
     public static void main(String[] args) {
-        int argsLength = args.length;
-        if(argsLength==0){
-            callHelp();
+        Scanner console = new Scanner(System.in);
+        while(true){
+            System.out.println(FilesCommands.getCurrentDirectory() + "\\");
+            String command = console.nextLine();
+            try {
+                FilesCommands.execute(command);
+            } catch (IOException e) {
+                System.err.println("Something goes wrong!");
+                e.printStackTrace();
+            }
         }
-
-        String command = args[0];
-
-
-        switch(command){
-            case "help" : callHelp(); break;
-            case "dir" : {
-                break;
-            }
-            case "rename" : {
-
-                break;
-            }
-            case "copy" : {
-
-                break;
-            }
-            case "move" : {
-
-                break;
-            }
-            case "pack" : {
-
-                break;
-            }
-            case "unpack" : {
-
-            }
-            default : callHelp();
-        }
-
-
     }
-
-    static void callHelp(){
-        System.out.println("Console file utils.");
-        System.out.println("Works with the following keys:");
-        System.out.println("dir [directory]: display all files in current directory");
-        System.out.println("dir sort [name|date|size] [r] [directory] : display sorted list of files from current directory");
-        System.out.println("cd : change current directory");
-        System.out.println("copy [replace] [create_dir] source_path destination_path : copy selected file to selected directory");
-        System.out.println("move [replace] [create_dir] source_path destination_path : move selected file to selected directory");
-        System.out.println("unpack [create_dir] [destination_path] : unpack all files to selected directory");
-        System.out.println("grub cache");
-        System.out.println("Type \"q|quit\" to quit");
-    }
-
 }

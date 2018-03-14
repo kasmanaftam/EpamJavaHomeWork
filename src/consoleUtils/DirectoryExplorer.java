@@ -27,11 +27,19 @@ public class DirectoryExplorer {
             System.out.println("Invalid directory");
             return;
         }
-        DirectoryStream<Path> dirStream = Files.newDirectoryStream(directory);
+        DirectoryStream<Path> dirStream;
+        try {
+            dirStream = Files.newDirectoryStream(directory);
+        } catch (Exception e) {
+            System.out.println("Cannot access current folder");
+            return;
+        }
+
         List<Path> directoryFiles = new ArrayList<>();
         for (Path path : dirStream) {
             directoryFiles.add(path);
         }
+        dirStream.close();
         //find largest name length
         Path longestNamePath = Collections.max(directoryFiles, (A, B) -> {
             int nameLengthA = A.getFileName().toString().length();
@@ -39,7 +47,7 @@ public class DirectoryExplorer {
             return Integer.compare(nameLengthA, nameLengthB);
         });
         int longestNameLength = longestNamePath.getFileName().toString().length();
-        if(longestNameLength < 10) longestNameLength = 10; //for correct header print
+        if (longestNameLength < 10) longestNameLength = 10; //for correct header print
         int FILE_SIZE_POSITION_OFFSET = longestNameLength + 10;
         int FILE_TIME_POSITION_OFFSET = longestNameLength + 30;
 
@@ -49,13 +57,13 @@ public class DirectoryExplorer {
             Collections.reverse(directoryFiles);
         }
         //build header
-        StringBuilder header = new StringBuilder(longestNameLength+30);
+        StringBuilder header = new StringBuilder(longestNameLength + 30);
         header.setLength(longestNameLength + 30);
 
         header.insert(0, "file name");
-        header.insert(FILE_SIZE_POSITION_OFFSET-3, "file size");
+        header.insert(FILE_SIZE_POSITION_OFFSET - 3, "file size");
         header.insert(FILE_TIME_POSITION_OFFSET, "last modify time");
-        System.out.println(header+"\n");
+        System.out.println(header + "\n");
         //display directory elements
         for (Path path : directoryFiles) {
             StringBuilder fileInfo = new StringBuilder(longestNameLength + 40);
@@ -63,7 +71,10 @@ public class DirectoryExplorer {
             FileTime lastModifyTime = Files.getLastModifiedTime(path);
             DateFormat df = new SimpleDateFormat("yyyy:MM:dd hh:mm:ss");
             String fileName = path.getFileName().toString();
-            String fileSize = String.valueOf(DirectoryExplorer.size(path));
+            String fileSize;
+            if (Files.isDirectory(path))
+                fileSize = "dir";
+            else fileSize = String.valueOf(Files.size(path));
             String fileTime = df.format(lastModifyTime.toMillis());
 
             fileInfo.insert(0, fileName);
@@ -89,6 +100,7 @@ public class DirectoryExplorer {
                     }
                 }
             }
+            includedPaths.close();
         } else {
             try {
                 size = Files.size(path);
@@ -111,7 +123,7 @@ class FileSizeComparator implements Comparator<Path> {
     @Override
     public int compare(Path A, Path B) {
         try {
-            return (int) (DirectoryExplorer.size(A) - DirectoryExplorer.size(B));
+            return (int) (Files.size(A) - Files.size(B));
         } catch (IOException e) {
             e.printStackTrace();
             return 0;
