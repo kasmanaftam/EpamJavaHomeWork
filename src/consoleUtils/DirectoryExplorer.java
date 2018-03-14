@@ -57,7 +57,8 @@ public class DirectoryExplorer {
             Collections.reverse(directoryFiles);
         }
         //build header
-        StringBuilder header = new StringBuilder(longestNameLength + 30);
+        StringBuilder header = new StringBuilder();
+        for(int i=0; i<longestNameLength+30;i++)  header.append(" ");
         header.setLength(longestNameLength + 30);
 
         header.insert(0, "file name");
@@ -66,8 +67,8 @@ public class DirectoryExplorer {
         System.out.println(header + "\n");
         //display directory elements
         for (Path path : directoryFiles) {
-            StringBuilder fileInfo = new StringBuilder(longestNameLength + 40);
-            fileInfo.setLength(longestNameLength + 40);
+            StringBuilder fileInfo = new StringBuilder();
+            for(int i=0; i<longestNameLength+40;i++)  fileInfo.append(" ");
             FileTime lastModifyTime = Files.getLastModifiedTime(path);
             DateFormat df = new SimpleDateFormat("yyyy:MM:dd hh:mm:ss");
             String fileName = path.getFileName().toString();
