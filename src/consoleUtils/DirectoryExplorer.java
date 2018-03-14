@@ -40,6 +40,10 @@ public class DirectoryExplorer {
             directoryFiles.add(path);
         }
         dirStream.close();
+        if(directoryFiles.size()==0) {
+            System.out.println("folder is empty");
+            return;
+        }
         //find largest name length
         Path longestNamePath = Collections.max(directoryFiles, (A, B) -> {
             int nameLengthA = A.getFileName().toString().length();
