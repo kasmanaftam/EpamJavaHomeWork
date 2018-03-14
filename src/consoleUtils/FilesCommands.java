@@ -238,25 +238,6 @@ public class FilesCommands {
                 System.out.println("Can't delete file " + target);
             }
         }
-
-
-//        Files.walk(target, FileVisitOption.FOLLOW_LINKS)
-//                .sorted(Comparator.reverseOrder())
-//                .forEach(file -> {
-//                            try {
-//                                Files.deleteIfExists(file);
-//                                while (Files.exists(file)) {
-//                                }
-//                                while (Files.isDirectory(file)) {
-//                                }
-//                                System.out.println("File: " + file + " successfully deleted");
-//                            } catch (DirectoryNotEmptyException e) {
-//                                System.out.println("Directory " + file + " is not empty!");
-//                            } catch (IOException e) {
-//                                System.out.println("Can't delete file: " + file);
-//                            }
-//                        }
-//                );
     }
 
     private static void pack(String[] args) throws IOException {
