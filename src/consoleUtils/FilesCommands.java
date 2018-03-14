@@ -103,11 +103,7 @@ public class FilesCommands {
             }
             if (args[0].equals("-sr")) reverseSortOrder = true;
         }
-        dir(fileComparator, reverseSortOrder);
-    }
-
-    private static void dir(Comparator comparator, boolean reverseSort) throws IOException {
-        DirectoryExplorer.displayDir(currentDirectory, comparator, reverseSort);
+        DirectoryExplorer.displayDir(currentDirectory, fileComparator, reverseSortOrder);
     }
 
     private static void move(String[] args) throws IOException {
