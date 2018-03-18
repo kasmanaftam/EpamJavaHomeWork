@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -12,7 +13,7 @@ public class FilesCommands {
 
     private static Path currentDirectory = Paths.get("./").toAbsolutePath().normalize();
 
-    public static void execute(String commandRaw) throws IOException {
+    static void execute(String commandRaw) throws IOException {
         final String WORD_OR_WORDS_IN_QUOTES_REGEX = "([^\"]\\S*|\".+?\")\\s*";
         List<String> commandSplited = new ArrayList<>();
         Matcher m = Pattern.compile(WORD_OR_WORDS_IN_QUOTES_REGEX).matcher(commandRaw);
@@ -48,7 +49,7 @@ public class FilesCommands {
                 unpack(args);
                 break;
             case "cd":
-                setCurrentDirectory(args[0]);
+                setCurrentDirectory(args);
                 break;
             case "dir":
                 dir(args);
@@ -64,7 +65,7 @@ public class FilesCommands {
 
     }
 
-    public static Path getCurrentDirectory() {
+    static Path getCurrentDirectory() {
         return currentDirectory;
     }
 
@@ -74,8 +75,14 @@ public class FilesCommands {
         }
     }
 
-    private static void setCurrentDirectory(String targetDirectory) {
-        Path targetPath = currentDirectory.resolve(targetDirectory);
+    private static void setCurrentDirectory(String[] args) {
+
+        if (args.length == 0) {
+            System.out.println("Invalid target folder");
+            return;
+        }
+
+        Path targetPath = currentDirectory.resolve(args[0]);
         if (Files.isDirectory(targetPath)) {
             FilesCommands.currentDirectory = targetPath.toAbsolutePath().normalize();
         } else {
@@ -84,10 +91,10 @@ public class FilesCommands {
     }
 
     private static void dir(String[] args) throws IOException {
-        Comparator fileComparator = new FileNameComparator();
+        Comparator<Path> fileComparator = new FileNameComparator();
         boolean reverseSortOrder = false;
 
-        if (args.length >= 2 && args[0].startsWith("-s")) {
+        if (args.length >= 2 && args[0].matches("-r?s")) {
             switch (args[1].toLowerCase()) {
                 case "name":
                     break;
@@ -101,7 +108,7 @@ public class FilesCommands {
                     System.out.println("Invalid sort argument, you can use only: name, date, size");
                     return;
             }
-            if (args[0].equals("-sr")) reverseSortOrder = true;
+            if (args[0].equals("-rs")) reverseSortOrder = true;
         }
         DirectoryExplorer.displayDir(currentDirectory, fileComparator, reverseSortOrder);
     }
@@ -133,9 +140,26 @@ public class FilesCommands {
                 return;
             }
         }
-        int rootIndex = sourcePath.getNameCount() - 1;
-        copyRecursive(sourcePath, destinationPath, replaceExisting, rootIndex);
-        delete(sourcePath);
+        if (sourcePath.getRoot().equals(destinationPath.getRoot())) {
+            try {
+                if (replaceExisting) {
+                    Files.move(sourcePath, destinationPath, StandardCopyOption.REPLACE_EXISTING);
+                } else {
+                    Files.move(sourcePath, destinationPath);
+                }
+            } catch (FileAlreadyExistsException e) {
+                System.out.println("Can't move file " + sourcePath +
+                        ". File " + destinationPath + " already exists");
+            } catch (DirectoryNotEmptyException e) {
+            } catch (IOException e) {
+                System.out.println("Can't move file " + sourcePath);
+            }
+
+        } else {
+            copy(sourcePath, destinationPath, replaceExisting);
+            delete(sourcePath);
+        }
+
     }
 
     private static void copy(String[] args) throws IOException {
@@ -165,38 +189,30 @@ public class FilesCommands {
                 return;
             }
         }
-        int rootIndex = sourcePath.getNameCount() - 1;
-        copyRecursive(sourcePath, destinationPath, replaceExisting, rootIndex);
-    }
 
-    private static void copyRecursive(Path sourcePath, Path destinationPath, boolean replaceExisting, int rootIndex) throws IOException {
-        if (Files.isDirectory(sourcePath)) {
-            DirectoryStream<Path> directoryStream = Files.newDirectoryStream(sourcePath);
-            for (Path path : directoryStream) {
-                copyRecursive(path, destinationPath, replaceExisting, rootIndex);
-            }
-            directoryStream.close();
-        } else {
-            String fileRelativePath = sourcePath.subpath(rootIndex, sourcePath.getNameCount()).toString();
-            Path copyFileAbsolutePath = Paths.get(destinationPath.toString(), fileRelativePath);
-            Path copyFileParentalDirectory = copyFileAbsolutePath.getParent();
-            if (!Files.isDirectory(copyFileParentalDirectory)) {
-                try {
-                    Files.createDirectories(copyFileParentalDirectory);
-                } catch (IOException e) {
-                    System.out.println("Can't create folder: " + copyFileParentalDirectory);
-                    return;
+        Iterator<Path> pathsToCopy = Files
+                .walk(sourcePath, FileVisitOption.FOLLOW_LINKS)
+                .iterator();
+
+        while (pathsToCopy.hasNext()) {
+            Path pathToCopy = pathsToCopy.next();
+            Path relativePath = sourcePath.getParent().relativize(pathToCopy);
+            Path targetPath = destinationPath.resolve(relativePath);
+
+            try {
+                if (replaceExisting) {
+                    Files.copy(pathToCopy, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                } else {
+                    Files.copy(pathToCopy, targetPath);
                 }
-            }
-            if (replaceExisting) {
-                Files.copy(sourcePath, copyFileAbsolutePath, StandardCopyOption.REPLACE_EXISTING);
-            } else {
-                try {
-                    Files.copy(sourcePath, copyFileAbsolutePath);
-                } catch (FileAlreadyExistsException e) {
-                    System.out.println("file " + copyFileAbsolutePath + " already exists");
-                    return;
-                }
+            } catch (FileAlreadyExistsException e) {
+                System.out.println("Can't copy file " + pathToCopy +
+                        ". File " + targetPath + " already exists");
+            } catch (DirectoryNotEmptyException e) {
+                continue;
+            } catch (IOException e) {
+                System.out.println("Can't copy file " + pathToCopy);
+                break;
             }
         }
     }
@@ -213,25 +229,16 @@ public class FilesCommands {
     }
 
     private static void delete(Path target) throws IOException {
-        if (Files.isDirectory(target)) {
-            DirectoryStream<Path> targetDirectories = Files.newDirectoryStream(target);
-            for (Path path : targetDirectories) {
-                delete(path);
-            }
-            targetDirectories.close();
+        Iterator<Path> fileIterator = Files.walk(target, FileVisitOption.FOLLOW_LINKS)
+                .sorted(Comparator.reverseOrder())
+                .iterator();
+        while (fileIterator.hasNext()) {
+            Path pathToDelete = fileIterator.next();
             try {
-                Files.delete(target);
-                return;
+                Files.delete(pathToDelete);
             } catch (IOException e) {
-                System.out.println("Can't delete folder: " + target);
-            }
-
-        } else {
-            try {
-                Files.delete(target);
-                return;
-            } catch (IOException e) {
-                System.out.println("Can't delete file " + target);
+                System.out.println("Can't delete path " + pathToDelete);
+                break;
             }
         }
     }
@@ -270,18 +277,18 @@ public class FilesCommands {
         Zipper.unzipFile(source, destination);
     }
 
-    static void callHelp(String[] args) {
+    private static void callHelp(String[] args) {
         if (args.length == 0) {
             System.out.println("Simple console file manager");
             System.out.println("Works with the following commands: dir, cd, copy , move, delete, pack, unpack");
-            System.out.println("use help [command] for additional info");
+            System.out.println("use help <command> for additional info");
             System.out.println("quit : quit the program");
             return;
         }
         switch (args[0]) {
             case "dir":
-                System.out.println("dir [-s <comp>] [-rs <comp>] : Display current directory elements. " +
-                        "Can sort files by following comparators: name, size, date");
+                System.out.println("dir [-s|-rs <comp>] : Display current directory elements. " +
+                        "Can sort files by following comparators: name, size, date. -s - sort, -rs - reverse sort");
                 break;
             case "cd":
                 System.out.println("cd <path> : change current directory");

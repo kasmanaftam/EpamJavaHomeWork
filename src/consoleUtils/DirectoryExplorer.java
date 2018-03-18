@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -15,18 +14,20 @@ import java.util.List;
 
 import static java.nio.file.Files.getLastModifiedTime;
 
-
 public class DirectoryExplorer {
-    public static void displayDir(Path directory) throws IOException {
+    static void displayDir(Path directory) throws IOException {
         displayDir(directory, new FileNameComparator(), false);
     }
 
-    public static void displayDir(Path directory, Comparator comparator, boolean reverseOrder) throws IOException {
-        //check
+    static void displayDir(Path directory, Comparator<Path> comparator, boolean reverseOrder) throws IOException {
+
+        //validate selected path
         if (!Files.isDirectory(directory)) {
             System.out.println("Invalid directory");
             return;
         }
+
+        //get directory files
         DirectoryStream<Path> dirStream;
         try {
             dirStream = Files.newDirectoryStream(directory);
@@ -34,7 +35,6 @@ public class DirectoryExplorer {
             System.out.println("Cannot access current folder");
             return;
         }
-
         List<Path> directoryFiles = new ArrayList<>();
         for (Path path : dirStream) {
             directoryFiles.add(path);
@@ -44,6 +44,7 @@ public class DirectoryExplorer {
             System.out.println("folder is empty");
             return;
         }
+
         //find largest name length
         Path longestNamePath = Collections.max(directoryFiles, (A, B) -> {
             int nameLengthA = A.getFileName().toString().length();
@@ -56,19 +57,20 @@ public class DirectoryExplorer {
         int FILE_TIME_POSITION_OFFSET = longestNameLength + 30;
 
         //sort collection
-        Collections.sort(directoryFiles, comparator);
+        directoryFiles.sort(comparator);
         if (reverseOrder) {
             Collections.reverse(directoryFiles);
         }
+
         //build header
         StringBuilder header = new StringBuilder();
         for(int i=0; i<longestNameLength+30;i++)  header.append(" ");
         header.setLength(longestNameLength + 30);
-
         header.insert(0, "file name");
         header.insert(FILE_SIZE_POSITION_OFFSET - 3, "file size");
         header.insert(FILE_TIME_POSITION_OFFSET, "last modify time");
         System.out.println(header + "\n");
+
         //display directory elements
         for (Path path : directoryFiles) {
             StringBuilder fileInfo = new StringBuilder();
@@ -120,6 +122,14 @@ public class DirectoryExplorer {
 class FileNameComparator implements Comparator<Path> {
     @Override
     public int compare(Path A, Path B) {
+        boolean aIsDir = Files.isDirectory(A);
+        boolean bIsDir = Files.isDirectory(B);
+        if(aIsDir && !bIsDir){
+            return -1;
+        }
+        else if(!aIsDir && bIsDir){
+            return 1;
+        }
         return A.toString().compareToIgnoreCase(B.toString());
     }
 }
@@ -127,8 +137,18 @@ class FileNameComparator implements Comparator<Path> {
 class FileSizeComparator implements Comparator<Path> {
     @Override
     public int compare(Path A, Path B) {
+        boolean aIsDir = Files.isDirectory(A);
+        boolean bIsDir = Files.isDirectory(B);
+        if(aIsDir && !bIsDir){
+            return -1;
+        }
+        else if(!aIsDir && bIsDir){
+            return 1;
+        }else if(aIsDir && bIsDir){
+            return A.toString().compareToIgnoreCase(B.toString());
+        }
         try {
-            return (int) (Files.size(A) - Files.size(B));
+            return Long.compare(Files.size(A), Files.size(B));
         } catch (IOException e) {
             e.printStackTrace();
             return 0;
